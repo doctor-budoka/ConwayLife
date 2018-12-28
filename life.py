@@ -1,52 +1,47 @@
 # import numpy as np
 import copy
+import itertools
 
 RULE = (2, (3,), (2, 3))
 
-NEIGHBOURHOOD = {(x, y) for x in [-1, 0, 1] for y in [-1, 0, 1]}
 
-class Place():
-    alive = set()
-    region = set()
-    next_gen = set()
+class Life:
+    def __init__(self, seed, rule=RULE):
+        Life.verify_rule(rule)
+        self.rule = tuple(rule)
+        self.dim = self.rule[0]
+        self.birthing_rule = self.rule[1]
+        self.survival_rule = self.rule[2]
 
-    def __init__(self, coord, is_alive):
-        assert type(coord) == tuple
-        assert len(coord) == RULE[0]
-        assert type(is_alive) == bool
+        self._neighbour_grid = set(itertools.product([-1, 0, 1], repeat=self.dim)).difference({(0,)*self.dim})
 
-        self.coord = coord
-        self.is_alive = is_alive
-        self.neighboursa = self.get_neighbours()
-        if is_alive:
-            Place.alive.add(coord)
-            Place.region.add(self.neighbours)
+        self.living = set()
+        self.nbd = set()
+        self.add_lives(seed)
 
-    def get_neighbouring_coords(self):
-        grid = copy.copy(NEIGHBOURHOOD)
-        grid.difference_update({(0, 0)})
-        neighbours = {(self.coord[0] + x, self.coord[1] + y) for x, y in grid}
-        return neighbours
+    def verify_tuple(self, life):
+        if len(life) != self.dim:
+            raise ValueError(f"This game has dimension {self.dim}. This tuple has length {len(life)}: {life}")
 
-    def get_neighbours(self):
+    def add_life(self, life):
+        self.verify_tuple(life)
+        self.living.add(life)
 
-    def will_live(self):
-        living_neighbours = Place.alive.intersection(self.neighbours)
-        num_living_neighbours = len(living_neighbours)
-        if self.is_alive and num_living_neighbours in RULE[2]:
-            return True
-        elif not self.is_alive and num_living_neighbours in RULE[1]:
-            return True
-        return False
+        neighbourhood = {tuple(sum(x) for x in zip(life, grid_item)) for grid_item in self._neighbour_grid}
+        self.nbd.update(neighbourhood)
 
-    def __eq__(self, other):
-        if not isinstance(other, Place):
-            raise ValueError(f"{other} is not an instance of Place")
-        return self.coord == other.coord and self.is_alive == other.is_alive
+    def add_lives(self, lives):
+        for life in lives:
+            self.add_life(life)
 
-    # @classmethod
-    # def calc_next_gen(cls):
-    #     new_alive = {point for point in }
+    @staticmethod
+    def verify_rule(rule):
+        tuple_rule = tuple(rule)
+        if len(tuple_rule) != 3:
+            error_msg = ("Rules must have 3 elements: \n"
+                         "A dimension (int), a birth rule (list-like) and a survival rule (list-like)")
+            raise ValueError(error_msg)
+
 
 def tuples_as_matrix(coords):
     max_x = max([coord[0] for coord in coords])
@@ -60,7 +55,5 @@ def tuples_as_matrix(coords):
 
 
 if __name__ == '__main__':
-    # gol = world({(0, 0)})
-    # print(gol.potentials)
-    a_point = Point((0, 0))
-    print(a_point.neighbours)
+    new_life = Life({(0, 0)})
+    print(new_life.nbd)
